@@ -1,12 +1,13 @@
 import express from "express";
 import { connectDB } from "./database/connection";
-import { config } from "dotenv";
-
-config();
+import todoRouter from "./routers/todoRouter";
 
 const port = 8000;
 
 const app = express();
+
+app.use(express.json());
+app.use("/todos", todoRouter);
 
 app.listen(port, () => {
   connectDB();

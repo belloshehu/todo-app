@@ -1,6 +1,6 @@
 import { Pool } from "postgres-pool";
 const text = `
-    CREATE TABLE IF NOT EXISTS "todo" (
+    CREATE TABLE IF NOT EXISTS "todos" (
 	    "id" SERIAL,
 	    "title" VARCHAR(100) NOT NULL,
 	    "completed" BOOLEAN NOT NULL DEFAULT FALSE,
