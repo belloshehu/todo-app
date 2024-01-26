@@ -25,48 +25,54 @@ export const getTodo = async (req: Request, res: Response) => {
     res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid todo ID", success: false });
-  }
+  } else {
+    try {
+      const result = await pool.query("SELECT * FROM todos WHERE id=$1", [id]);
+      const todo: Todo = result.rows[0];
 
-  try {
-    const result = await pool.query("SELECT * FROM todos WHERE id=$1", [id]);
-    const todo: Todo = result.rows[0];
-
-    if (!todo) {
-      res.status(StatusCodes.NOT_FOUND).json({
-        message: `Todo with ID ${id} not found`,
+      if (!todo) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          message: `Todo with ID ${id} not found`,
+          success: false,
+        });
+      } else {
+        res.status(StatusCodes.OK).json({ todo, success: true });
+      }
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        message: `Failed to query todo with ID ${id}. ${error}`,
         success: false,
       });
-    } else {
-      res.status(StatusCodes.OK).json({ todo, success: true });
     }
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: `Failed to query todo with ID ${id}. ${error}`,
-      success: false,
-    });
   }
 };
 
 // create new todo
 export const createTodo = async (req: Request, res: Response) => {
   const { title } = req.body;
-  try {
-    const result = await pool.query(
-      "INSERT INTO todos (title) VALUES ($1) RETURNING *",
-      [title]
-    );
-    const todo: Todo = result.rows[0];
+  if (!title) {
+    res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Title is required", success: false });
+  } else {
+    try {
+      const result = await pool.query(
+        "INSERT INTO todos (title) VALUES ($1) RETURNING *",
+        [title]
+      );
+      const todo: Todo = result.rows[0];
 
-    res.status(StatusCodes.CREATED).json({
-      todo,
-      message: "Todo created successfully",
-      success: true,
-    });
-  } catch (error: any) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: `Failed to create todo. ${error.message}`,
-      success: false,
-    });
+      res.status(StatusCodes.CREATED).json({
+        todo,
+        message: "Todo created successfully",
+        success: true,
+      });
+    } catch (error: any) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        message: `Failed to create todo. ${error.message}`,
+        success: false,
+      });
+    }
   }
 };
 
@@ -87,24 +93,24 @@ export const updateTodo = async (req: Request, res: Response) => {
     res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Todo title and completed required", success: false });
-  }
+  } else {
+    try {
+      const result = await pool.query(
+        "UPDATE todos SET title = $1, completed = $2 WHERE id = $3 RETURNING *",
+        [title, completed, id]
+      );
 
-  try {
-    const result = await pool.query(
-      "UPDATE todos SET title = $1, completed = $2 WHERE id = $3 RETURNING *",
-      [title, completed, id]
-    );
-
-    res.status(StatusCodes.OK).json({
-      todo: <Todo>result.rows[0],
-      message: `Todo with ID ${id} updated`,
-      success: true,
-    });
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: `Failed to  update todo with ID ${id}. ${error}`,
-      success: false,
-    });
+      res.status(StatusCodes.OK).json({
+        todo: <Todo>result.rows[0],
+        message: `Todo with ID ${id} updated`,
+        success: true,
+      });
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        message: `Failed to  update todo with ID ${id}. ${error}`,
+        success: false,
+      });
+    }
   }
 };
 
@@ -116,31 +122,31 @@ export const deleteTodo = async (req: Request, res: Response) => {
     res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: "Invalid todo ID", success: false });
-  }
+  } else {
+    try {
+      const result = await pool.query(
+        "DELETE FROM todos WHERE id=$1 RETURNING *",
+        [id]
+      );
 
-  try {
-    const result = await pool.query(
-      "DELETE FROM todos WHERE id=$1 RETURNING *",
-      [id]
-    );
-
-    const deletedTodo: Todo = result.rows[0];
-    if (!deletedTodo) {
-      res.status(StatusCodes.NOT_FOUND).json({
-        message: `Todo with ID ${id} not found`,
+      const deletedTodo: Todo = result.rows[0];
+      if (!deletedTodo) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          message: `Todo with ID ${id} not found`,
+          success: false,
+        });
+      } else {
+        res.status(StatusCodes.OK).json({
+          todo: deletedTodo,
+          message: `Todo with ID ${id} deleted`,
+          success: true,
+        });
+      }
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        message: `Failed to  delete todo with ID ${id}. ${error}`,
         success: false,
       });
-    } else {
-      res.status(StatusCodes.OK).json({
-        todo: deletedTodo,
-        message: `Todo with ID ${id} deleted`,
-        success: true,
-      });
     }
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: `Failed to  delete todo with ID ${id}. ${error}`,
-      success: false,
-    });
   }
 };
